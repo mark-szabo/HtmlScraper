@@ -14,6 +14,8 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using ClassLibrary;
+using HtmlAgilityPack;
+using System.Collections.ObjectModel;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -29,6 +31,10 @@ namespace HtmlScraper
             this.InitializeComponent();
         }
 
+        HtmlWeb htmlWeb = new HtmlWeb();
+        HtmlDocument htmlDoc;
+        ObservableCollection<HtmlElement> elementList = new ObservableCollection<HtmlElement>();
+
         /// <summary>
         /// This is the click handler for the "Go" button.
         /// </summary>
@@ -38,7 +44,7 @@ namespace HtmlScraper
         {
             if (!pageIsLoading)
             {
-                NavigateWebview(AddressBox.Text);
+                NavigateWebviewAsync(AddressBox.Text);
             }
             else
             {
@@ -71,7 +77,7 @@ namespace HtmlScraper
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
-                NavigateWebview(AddressBox.Text);
+                NavigateWebviewAsync(AddressBox.Text);
             }
         }
 
@@ -79,11 +85,12 @@ namespace HtmlScraper
         /// Helper to perform the navigation in webview
         /// </summary>
         /// <param name="url"></param>
-        private void NavigateWebview(string url)
+        private void NavigateWebviewAsync(string url)
         {
             try
             {
                 Uri targetUri = new Uri(url);
+                htmlDoc = htmlWeb.Load(url);
                 WebViewControl.Navigate(targetUri);
             }
             catch (UriFormatException ex)
@@ -168,6 +175,14 @@ namespace HtmlScraper
         {
             logResults.Inlines.Add(new Run { Text = logEntry + "\n" });
             logScroller.ChangeView(0, logScroller.ScrollableHeight, null);
+        }
+
+        private void ListItemPathBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var nodes = htmlDoc.DocumentNode.SelectNodes(ListItemPathBox.Text);
+            ListItemPathBlock.Text = $"Found {nodes.Count} nodes on this page.";
+
+            childrenListView.ItemsSource = nodes.First().ChildNodes.Where(m => m.Name != "#text");
         }
     }
 }
