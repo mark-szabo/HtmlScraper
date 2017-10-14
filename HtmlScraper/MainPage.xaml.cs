@@ -1,22 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using ClassLibrary;
 using HtmlAgilityPack;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -36,6 +26,7 @@ namespace HtmlScraper
         HtmlDocument htmlDoc;
         ObservableCollection<SelectedNode> selectedNodes = new ObservableCollection<SelectedNode>();
         HtmlNode parentNode;
+        Uri baseUrl;
         string basePath = "";
 
         /// <summary>
@@ -92,9 +83,9 @@ namespace HtmlScraper
         {
             try
             {
-                Uri targetUri = new Uri(url);
-                htmlDoc = htmlWeb.Load(url);
-                WebViewControl.Navigate(targetUri);
+                baseUrl = new Uri(url);
+                htmlDoc = htmlWeb.Load(baseUrl);
+                WebViewControl.Navigate(baseUrl);
             }
             catch (UriFormatException ex)
             {
@@ -174,7 +165,7 @@ namespace HtmlScraper
         /// Helper for logging
         /// </summary>
         /// <param name="logEntry"></param>
-        void AppendLog(string logEntry)
+        public void AppendLog(string logEntry)
         {
             logResults.Inlines.Add(new Run { Text = logEntry + "\n" });
             logScroller.ChangeView(0, logScroller.ScrollableHeight, null);
@@ -184,7 +175,7 @@ namespace HtmlScraper
         {
             if (htmlDoc == null)
             {
-                await UwpHelpers.DisplayErrorDialogAsync("Page not loaded", "Please load the page first by clicking the Go button next to the URL box!");
+                await Helpers.DisplayErrorDialogAsync("Page not loaded", "Please load the page first by clicking the Go button next to the URL box!");
                 return;
             }
             ListItemPathBox.IsEnabled = false;
@@ -207,7 +198,7 @@ namespace HtmlScraper
         {
             var path = (String)((Button)sender).Tag;
             var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
-            var name = await UwpHelpers.InputTextDialogAsync("Give a name for this element!", (clickedNode.Attributes["class"]?.Value ?? ""));
+            var name = await Helpers.InputTextDialogAsync("Give a name for this element!", (clickedNode.Attributes["class"]?.Value ?? ""));
             var newSelectedNode = new SelectedNode
             {
                 Name = name,
@@ -216,7 +207,7 @@ namespace HtmlScraper
             };
 
             if (!selectedNodes.Any(m => m.RelativePath == newSelectedNode.RelativePath)) selectedNodes.Add(newSelectedNode);
-            else await UwpHelpers.DisplayErrorDialogAsync("Item already selected", "You have already selected this item.");
+            else await Helpers.DisplayErrorDialogAsync("Item already selected", "You have already selected this item.");
 
             SelectedNodesListView.ItemsSource = selectedNodes;
         }
@@ -237,7 +228,7 @@ namespace HtmlScraper
             ChildrenListView.ItemsSource = clickedNode.ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
         }
 
-        private void UpButtonClick(object sender, RoutedEventArgs e)
+        private void UpButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -246,6 +237,15 @@ namespace HtmlScraper
                     else if (parentNode != null) if (parentNode.ParentNode != null) ChildrenListView.ItemsSource = parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
             }
             catch (Exception ex) { }
+        }
+
+        private async void ExcelExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            await Helpers.ExcelExportAsync(
+                selectedNodes.ToList(),
+                baseUrl,
+                PaginationBox.Text,
+                ListItemPathBox.Text);
         }
     }
 }
