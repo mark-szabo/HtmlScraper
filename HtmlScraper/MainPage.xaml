@@ -5,6 +5,7 @@
     xmlns:local="using:HtmlScraper"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ClassLibrary="using:ClassLibrary"
     xmlns:HtmlAgilityPack="using:HtmlAgilityPack"
     mc:Ignorable="d">
 
@@ -20,7 +21,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
-                <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">Navigate to URL</TextBlock>
+                <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">1. Navigate to the URL</TextBlock>
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -47,33 +48,93 @@
             </ScrollViewer>
         </Grid>
         <Grid Grid.Column="1" Margin="0,0,0,0">
-            <StackPanel>
-                <TextBox x:Name="PaginationBox" Text="page" Header="Pagination GET param name" Margin="0,0,0,10"/>
-                <TextBox x:Name="ListItemPathBox" Text="//article" Header="List item path" LostFocus="ListItemPathBox_LostFocus"/>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0">
+                <TextBox x:Name="PaginationBox" Text="page" Header="2. Put here the pagination GET param name (if you'd like to fetch multiple pages)" Margin="0,0,0,10"/>
+                <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">3. List item path</TextBlock>
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ListItemPathBox" Text="//article" LostFocus="ListItemPathGoButton_Click" Grid.Column="0"/>
+                    <Button x:Name="ListItemPathGoButton" Content="Go" Grid.Column="1" Margin="10,0,0,0" Click="ListItemPathGoButton_Click"/>
+                    <Button x:Name="UpButton" Content="Up" Grid.Column="2" Margin="10,0,0,0" Click="UpButtonClick"/>
+                </Grid>
                 <TextBlock x:Name="ListItemPathBlock" Margin="0,0,0,20"/>
-                <ScrollViewer x:Name="pathScroller"
-                      BorderBrush="#FF707070" BorderThickness="1"
-                      VerticalScrollBarVisibility="Auto" Margin="0,0,0,10"
-                      Height="Auto">
-                    <ListView x:Name="childrenListView">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="HtmlAgilityPack:HtmlNode">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition/>
-                                    </Grid.RowDefinitions>
-                                    <Button Content="Add" Grid.Column="0"/>
-                                    <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </ScrollViewer>
             </StackPanel>
+
+            <ScrollViewer x:Name="ChildrenScroller"
+                          BorderBrush="#FF707070" BorderThickness="1"
+                          VerticalScrollBarVisibility="Auto" 
+                          Margin="0,0,0,10" 
+                          MinHeight="200"
+                          Grid.Row="1">
+                <ListView x:Name="ChildrenListView"
+                          IsItemClickEnabled="True"
+                          ItemClick="ChildrenListViewItem_Click" 
+                          ScrollViewer.VerticalScrollMode="Enabled">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="HtmlAgilityPack:HtmlNode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                    <Button Content="Add" 
+                                            Click="ChildrenListViewItem_AddButtonClick" 
+                                            Grid.Column="0" 
+                                            Tag="{x:Bind XPath}" Margin="0,10"/>
+
+                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
+                                <TextBlock Text="{x:Bind InnerText}" TextTrimming="WordEllipsis" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </ScrollViewer>
+            <ScrollViewer x:Name="SelectedNodesScroller"
+                      BorderBrush="#FF707070" BorderThickness="1"
+                      VerticalScrollBarVisibility="Auto" Margin="0,0,0,0"
+                      MinHeight="100"
+                              Grid.Row="2">
+                <ListView x:Name="SelectedNodesListView"
+                              IsItemClickEnabled="False">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="ClassLibrary:SelectedNode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Button Content="Remove" 
+                                            Click="SelectedNodesListViewItem_RemoveButtonClick" 
+                                            Tag="{x:Bind RelativePath}" 
+                                            Grid.Column="0"/>
+                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
+                                <TextBlock Text="{x:Bind HtmlTag}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2"/>
+                                <TextBlock Text="{x:Bind Attribute}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="3"/>
+                                <TextBlock Text="{x:Bind RelativePath}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="4"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Page>

@@ -99,6 +99,7 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UwpHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -127,7 +128,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="EPPlus">
+    <PackageReference Include="EPPlus" NoWarn="NU1701">
       <Version>4.1.1</Version>
     </PackageReference>
     <PackageReference Include="HtmlAgilityPack">

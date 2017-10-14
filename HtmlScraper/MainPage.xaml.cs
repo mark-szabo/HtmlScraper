@@ -16,6 +16,7 @@ using Windows.UI.Xaml.Navigation;
 using ClassLibrary;
 using HtmlAgilityPack;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -33,7 +34,9 @@ namespace HtmlScraper
 
         HtmlWeb htmlWeb = new HtmlWeb();
         HtmlDocument htmlDoc;
-        ObservableCollection<HtmlElement> elementList = new ObservableCollection<HtmlElement>();
+        ObservableCollection<SelectedNode> selectedNodes = new ObservableCollection<SelectedNode>();
+        HtmlNode parentNode;
+        string basePath = "";
 
         /// <summary>
         /// This is the click handler for the "Go" button.
@@ -177,12 +180,72 @@ namespace HtmlScraper
             logScroller.ChangeView(0, logScroller.ScrollableHeight, null);
         }
 
-        private void ListItemPathBox_LostFocus(object sender, RoutedEventArgs e)
+        private async void ListItemPathGoButton_Click(object sender, RoutedEventArgs e)
         {
+            if (htmlDoc == null)
+            {
+                await UwpHelpers.DisplayErrorDialogAsync("Page not loaded", "Please load the page first by clicking the Go button next to the URL box!");
+                return;
+            }
+            ListItemPathBox.IsEnabled = false;
             var nodes = htmlDoc.DocumentNode.SelectNodes(ListItemPathBox.Text);
-            ListItemPathBlock.Text = $"Found {nodes.Count} nodes on this page.";
+            basePath = nodes.First().XPath;
 
-            childrenListView.ItemsSource = nodes.First().ChildNodes.Where(m => m.Name != "#text");
+            ListItemPathBlock.Text = $"Found {nodes.Count} nodes on this page.";
+            ChildrenListView.ItemsSource = nodes.First().ChildNodes.Where(m => m.Name != "#text");
+        }
+
+        private void ChildrenListViewItem_Click(object sender, ItemClickEventArgs e)
+        {
+            var clickedNode = (HtmlNode)e.ClickedItem;
+            parentNode = clickedNode;
+
+            ChildrenListView.ItemsSource = (clickedNode).ChildNodes.Where(m => m.Name != "#text");
+        }
+
+        private async void ChildrenListViewItem_AddButtonClick(object sender, RoutedEventArgs e)
+        {
+            var path = (String)((Button)sender).Tag;
+            var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
+            var newSelectedNode = new SelectedNode
+            {
+                Name = "name",
+                Attribute = clickedNode.Attributes["class"]?.Value,
+                HtmlTag = clickedNode.Name,
+                RelativePath = Helpers.TrimStart(clickedNode.XPath, basePath)
+            };
+
+            if (!selectedNodes.Any(m => m.RelativePath == newSelectedNode.RelativePath)) selectedNodes.Add(newSelectedNode);
+            else await UwpHelpers.DisplayErrorDialogAsync("Item already selected", "You have already selected this item.");
+
+            SelectedNodesListView.ItemsSource = selectedNodes;
+        }
+
+        private void SelectedNodesListViewItem_RemoveButtonClick(object sender, RoutedEventArgs e)
+        {
+            var path = Helpers.TrimStart((String)((Button)sender).Tag, basePath);
+            selectedNodes.Remove(selectedNodes.SingleOrDefault(m => m.RelativePath == path));
+
+            SelectedNodesListView.ItemsSource = selectedNodes;
+        }
+
+        private void ChildrenListViewItem_UpButtonClick(object sender, RoutedEventArgs e)
+        {
+            var path = (String)((Button)sender).Tag;
+            var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
+
+            ChildrenListView.ItemsSource = clickedNode.ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+        }
+
+        private void UpButtonClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var childrenList = (IEnumerable<HtmlNode>)ChildrenListView.ItemsSource;
+                if (childrenList != null) if (childrenList.Count() != 0) ChildrenListView.ItemsSource = childrenList.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+                    else if (parentNode != null) if (parentNode.ParentNode != null) ChildrenListView.ItemsSource = parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+            }
+            catch (Exception ex) { }
         }
     }
 }
