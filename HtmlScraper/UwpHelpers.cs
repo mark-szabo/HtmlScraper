@@ -20,5 +20,25 @@ namespace HtmlScraper
 
             return await dialog.ShowAsync();
         }
+        public static async Task<string> InputTextDialogAsync(string title) => await InputTextDialogAsync(title, "");
+        public static async Task<string> InputTextDialogAsync(string title, string defaultText)
+        {
+            TextBox inputTextBox = new TextBox
+            {
+                Text = defaultText,
+                AcceptsReturn = false,
+                Height = 32
+            };
+            ContentDialog dialog = new ContentDialog
+            {
+                Content = inputTextBox,
+                Title = title,
+                IsSecondaryButtonEnabled = false,
+                PrimaryButtonText = "Ok"
+            };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary) return inputTextBox.Text;
+            else return "";
+        }
     }
 }

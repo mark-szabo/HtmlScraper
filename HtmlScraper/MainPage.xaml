@@ -116,7 +116,6 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -128,8 +127,7 @@
                                             Grid.Column="0"/>
                                 <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
                                 <TextBlock Text="{x:Bind HtmlTag}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2"/>
-                                <TextBlock Text="{x:Bind Attribute}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="3"/>
-                                <TextBlock Text="{x:Bind RelativePath}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="4"/>
+                                <TextBlock Text="{x:Bind RelativePath}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="3"/>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>

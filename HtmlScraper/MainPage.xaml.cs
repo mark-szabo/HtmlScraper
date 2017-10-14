@@ -207,10 +207,10 @@ namespace HtmlScraper
         {
             var path = (String)((Button)sender).Tag;
             var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
+            var name = await UwpHelpers.InputTextDialogAsync("Give a name for this element!", (clickedNode.Attributes["class"]?.Value ?? ""));
             var newSelectedNode = new SelectedNode
             {
-                Name = "name",
-                Attribute = clickedNode.Attributes["class"]?.Value,
+                Name = name,
                 HtmlTag = clickedNode.Name,
                 RelativePath = Helpers.TrimStart(clickedNode.XPath, basePath)
             };

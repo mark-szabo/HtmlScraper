@@ -23,7 +23,6 @@ namespace ClassLibrary
     public class SelectedNode
     {
         public string Name { get; set; }
-        public string Attribute { get; set; }
         public string HtmlTag { get; set; }
         public string RelativePath { get; set; }
     }
