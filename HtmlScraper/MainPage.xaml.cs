@@ -7,6 +7,7 @@ using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
 using HtmlAgilityPack;
 using System.Collections.ObjectModel;
+using System.Text;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -20,6 +21,7 @@ namespace HtmlScraper
         public MainPage()
         {
             this.InitializeComponent();
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
         HtmlWeb htmlWeb = new HtmlWeb();

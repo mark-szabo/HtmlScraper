@@ -3,6 +3,7 @@ using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Windows.Storage;
@@ -77,6 +78,9 @@ namespace HtmlScraper
         {
             try
             {
+                // Register encoding provider
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
                 // Perform Excel export
                 using (ExcelPackage excelPackage = new ExcelPackage())
                 {
