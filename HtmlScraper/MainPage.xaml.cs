@@ -8,6 +8,7 @@ using Windows.UI.Xaml.Input;
 using HtmlAgilityPack;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -167,7 +168,7 @@ namespace HtmlScraper
         /// Helper for logging
         /// </summary>
         /// <param name="logEntry"></param>
-        public void AppendLog(string logEntry)
+        void AppendLog(string logEntry)
         {
             logResults.Inlines.Add(new Run { Text = logEntry + "\n" });
             logScroller.ChangeView(0, logScroller.ScrollableHeight, null);
@@ -238,16 +239,52 @@ namespace HtmlScraper
                 if (childrenList != null) if (childrenList.Count() != 0) ChildrenListView.ItemsSource = childrenList.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
                     else if (parentNode != null) if (parentNode.ParentNode != null) ChildrenListView.ItemsSource = parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
             }
-            catch (Exception ex) { }
+            catch (Exception) { }
         }
 
         private async void ExcelExportButton_Click(object sender, RoutedEventArgs e)
         {
+            // Disable the UI
+            WebViewControl.IsTapEnabled = false;
+            GoButton.IsEnabled = false;
+            AddressBox.IsEnabled = false;
+            PaginationBox.IsEnabled = false;
+            ListItemPathBox.IsEnabled = false;
+            ListItemPathGoButton.IsEnabled = false;
+            UpButton.IsEnabled = false;
+            ChildrenScroller.IsEnabled = false;
+            SelectedNodesScroller.IsEnabled = false;
+
+            // Diplay ProgressRing
+            ExportProgressRing.IsActive = true;
+            ExportProgressRing.Visibility = Visibility.Visible;
+
             await Helpers.ExcelExportAsync(
                 selectedNodes.ToList(),
                 baseUrl,
                 PaginationBox.Text,
-                ListItemPathBox.Text);
+                ListItemPathBox.Text,
+                ExportCallback);
+
+            // Hide ProgressRing
+            ExportProgressRing.IsActive = false;
+            ExportProgressRing.Visibility = Visibility.Collapsed;
+
+            // Re-enable UI
+            WebViewControl.IsTapEnabled = true;
+            GoButton.IsEnabled = true;
+            AddressBox.IsEnabled = true;
+            PaginationBox.IsEnabled = true;
+            ListItemPathBox.IsEnabled = true;
+            ListItemPathGoButton.IsEnabled = true;
+            UpButton.IsEnabled = true;
+            ChildrenScroller.IsEnabled = true;
+            SelectedNodesScroller.IsEnabled = true;
+        }
+
+        private void ExportCallback(int pageNumber)
+        {
+            AppendLog($"Loaded items from page {pageNumber}.");
         }
     }
 }

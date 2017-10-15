@@ -9,6 +9,7 @@ using System.Web;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Provider;
+using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
 
 namespace HtmlScraper
@@ -74,7 +75,12 @@ namespace HtmlScraper
             else return "";
         }
 
-        public static async Task ExcelExportAsync(List<SelectedNode> nodes, Uri baseUrl, string paginationGetParam, string basePath)
+        private static IEnumerable<bool> IterateUntilFalse(bool condition)
+        {
+            while (condition) yield return true;
+        }
+
+        public static async Task ExcelExportAsync(List<SelectedNode> nodes, Uri baseUrl, string paginationGetParam, string basePath, Action<int> callback)
         {
             try
             {
@@ -87,7 +93,7 @@ namespace HtmlScraper
                     excelPackage.Workbook.Properties.Author = GetVersionString();
                     var worksheet = excelPackage.Workbook.Worksheets.Add("HtmlScraper");
 
-                    int excelRowIndex = 1, excelColumnIndex = 1, pageNumber = 1;
+                    int excelRowIndex = 1, excelColumnIndex = 1, pageNumber = 0;
                     HtmlWeb htmlWeb = new HtmlWeb();
 
                     // Write header
@@ -105,8 +111,10 @@ namespace HtmlScraper
                     excelRowIndex++;
 
                     bool newItemsFound = true;
+                    //Parallel.ForEach(IterateUntilFalse(newItemsFound), ignored => { });
                     while (newItemsFound)
                     {
+                        pageNumber++;
                         var uriBuilder = new UriBuilder(baseUrl);
                         if (paginationGetParam != null && paginationGetParam != "") uriBuilder.Query = $"{paginationGetParam}={pageNumber}";
                         else newItemsFound = false;
@@ -114,39 +122,46 @@ namespace HtmlScraper
                         var htmlDoc = htmlWeb.Load(uriBuilder.Uri);
                         var newItems = htmlDoc.DocumentNode.SelectNodes(basePath);
 
-                        if (newItems == null) { newItemsFound = false; break; }
-
-                        foreach (var item in newItems)
+                        if (newItems == null) newItemsFound = false;
+                        else
                         {
-                            excelColumnIndex = 1;
-                            foreach (var node in nodes)
+                            foreach (var item in newItems)
                             {
-                                var nodeElement = htmlDoc.DocumentNode.SelectSingleNode(item.XPath + node.RelativePath);
-                                switch (node.HtmlTag)
+                                excelColumnIndex = 1;
+                                foreach (var node in nodes)
                                 {
-                                    case "a":
-                                        if (node.Name == "Rating") worksheet.Cells[excelRowIndex, excelColumnIndex].Value = Convert.ToDouble(TrimStart(nodeElement?.Attributes["class"]?.Value, "rating-")) / 10;
-                                        else worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
-                                        excelColumnIndex++;
-                                        var hrefUriBuilder = new UriBuilder(baseUrl)
-                                        {
-                                            Path = nodeElement?.Attributes["href"]?.Value
-                                        };
-                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = HttpUtility.UrlDecode(hrefUriBuilder.Uri.AbsoluteUri);
-                                        break;
-                                    case "img":
-                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.Attributes["src"]?.Value;
-                                        break;
-                                    default:
-                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
-                                        break;
+                                    var nodeElement = htmlDoc.DocumentNode.SelectSingleNode(item.XPath + node.RelativePath);
+                                    switch (node.HtmlTag)
+                                    {
+                                        case "a":
+                                            if (node.Name == "Rating") worksheet.Cells[excelRowIndex, excelColumnIndex].Value = Convert.ToDouble(TrimStart(nodeElement?.Attributes["class"]?.Value, "rating-")) / 10;
+                                            else worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
+                                            excelColumnIndex++;
+                                            var hrefUriBuilder = new UriBuilder(baseUrl)
+                                            {
+                                                Path = nodeElement?.Attributes["href"]?.Value
+                                            };
+                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = HttpUtility.UrlDecode(hrefUriBuilder.Uri.AbsoluteUri);
+                                            break;
+                                        case "img":
+                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.Attributes["src"]?.Value;
+                                            break;
+                                        default:
+                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
+                                            break;
+                                    }
+                                    excelColumnIndex++;
                                 }
-                                excelColumnIndex++;
+                                excelRowIndex++;
                             }
-                            excelRowIndex++;
                         }
-                        //(new MainPage()).AppendLog("Loaded {newItems.Count} new items from page {pageNumber}.");
-                        pageNumber++;
+
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { callback(pageNumber); });
+
+                        //System.Windows.Threading.Dispatcher.Invoke(() =>
+                        //{
+                        //    callback(pageNumber);
+                        //});
                     }
 
                     var savePicker = new FileSavePicker
