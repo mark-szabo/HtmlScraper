@@ -116,8 +116,10 @@ namespace HtmlScraper
                     {
                         pageNumber++;
                         var uriBuilder = new UriBuilder(baseUrl);
-                        if (paginationGetParam != null && paginationGetParam != "") uriBuilder.Query = $"{paginationGetParam}={pageNumber}";
+                        var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                        if (paginationGetParam != null && paginationGetParam != "") query[paginationGetParam] = pageNumber.ToString();
                         else newItemsFound = false;
+                        uriBuilder.Query = query.ToString();
 
                         var htmlDoc = htmlWeb.Load(uriBuilder.Uri);
                         var newItems = htmlDoc.DocumentNode.SelectNodes(basePath);

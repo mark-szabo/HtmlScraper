@@ -10,8 +10,6 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Threading.Tasks;
 
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
-
 namespace HtmlScraper
 {
     /// <summary>
@@ -181,7 +179,7 @@ namespace HtmlScraper
                 await Helpers.DisplayErrorDialogAsync("Page not loaded", "Please load the page first by clicking the Go button next to the URL box!");
                 return;
             }
-            ListItemPathBox.IsEnabled = false;
+
             var nodes = htmlDoc.DocumentNode.SelectNodes(ListItemPathBox.Text);
             basePath = nodes.First().XPath;
 
@@ -199,6 +197,8 @@ namespace HtmlScraper
 
         private async void ChildrenListViewItem_AddButtonClick(object sender, RoutedEventArgs e)
         {
+            ListItemPathBox.IsEnabled = false;
+
             var path = (String)((Button)sender).Tag;
             var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
             var name = await Helpers.InputTextDialogAsync("Give a name for this element!", (clickedNode.Attributes["class"]?.Value ?? ""));
@@ -221,6 +221,8 @@ namespace HtmlScraper
             selectedNodes.Remove(selectedNodes.SingleOrDefault(m => m.RelativePath == path));
 
             SelectedNodesListView.ItemsSource = selectedNodes;
+
+            if (selectedNodes.Count == 0) ListItemPathBox.IsEnabled = true;
         }
 
         private void ChildrenListViewItem_UpButtonClick(object sender, RoutedEventArgs e)
@@ -275,7 +277,6 @@ namespace HtmlScraper
             GoButton.IsEnabled = true;
             AddressBox.IsEnabled = true;
             PaginationBox.IsEnabled = true;
-            ListItemPathBox.IsEnabled = true;
             ListItemPathGoButton.IsEnabled = true;
             UpButton.IsEnabled = true;
             ChildrenScroller.IsEnabled = true;

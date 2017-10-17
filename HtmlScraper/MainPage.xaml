@@ -26,7 +26,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="AddressBox" Text="https://aws.amazon.com/marketplace/search/results" Margin="0,0,10,0" Grid.Column="0" KeyUp="Address_KeyUp"/>
+                    <TextBox x:Name="AddressBox" Text="https://azuremarketplace.microsoft.com/en-us/marketplace/apps?filters=microsoft%3Bpartners&amp;page=1" Margin="0,0,10,0" Grid.Column="0" KeyUp="Address_KeyUp"/>
                     <Button x:Name="GoButton" Content="Go" Grid.Column="1" Click="{x:Bind GoButton_Click}"/>
                 </Grid>
                 <ProgressBar x:Name="ProgressControl" IsIndeterminate="True" Opacity="0" />
@@ -62,7 +62,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="ListItemPathBox" Text="//article" LostFocus="ListItemPathGoButton_Click" Grid.Column="0"/>
+                    <TextBox x:Name="ListItemPathBox" Text="//div[@class='spza_tileWrapper']" LostFocus="ListItemPathGoButton_Click" Grid.Column="0"/>
                     <Button x:Name="ListItemPathGoButton" Content="Go" Grid.Column="1" Margin="10,0,0,0" Click="ListItemPathGoButton_Click"/>
                     <Button x:Name="UpButton" Content="Up" Grid.Column="2" Margin="10,0,0,0" Click="UpButton_Click"/>
                 </Grid>
