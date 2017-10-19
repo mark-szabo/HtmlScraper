@@ -18,12 +18,12 @@ namespace HtmlScraper
     {
         public static string UriToString(Uri uri)
         {
-            return (uri != null) ? uri.ToString() : "";
+            return uri != null ? uri.ToString() : "";
         }
 
         public static string TrimStart(string target, string trimString)
         {
-            string result = target;
+            var result = target;
             while (result.StartsWith(trimString))
             {
                 result = result.Substring(trimString.Length);
@@ -44,7 +44,7 @@ namespace HtmlScraper
 
         public static async Task<ContentDialogResult> DisplayErrorDialogAsync(string title, string content)
         {
-            ContentDialog dialog = new ContentDialog
+            var dialog = new ContentDialog
             {
                 Title = title,
                 Content = content,
@@ -57,13 +57,13 @@ namespace HtmlScraper
         public static async Task<string> InputTextDialogAsync(string title) => await InputTextDialogAsync(title, "");
         public static async Task<string> InputTextDialogAsync(string title, string defaultText)
         {
-            TextBox inputTextBox = new TextBox
+            var inputTextBox = new TextBox
             {
                 Text = defaultText,
                 AcceptsReturn = false,
                 Height = 32
             };
-            ContentDialog dialog = new ContentDialog
+            var dialog = new ContentDialog
             {
                 Content = inputTextBox,
                 Title = title,
@@ -71,8 +71,7 @@ namespace HtmlScraper
                 PrimaryButtonText = "Ok"
             };
 
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary) return inputTextBox.Text;
-            else return "";
+            return await dialog.ShowAsync() == ContentDialogResult.Primary ? inputTextBox.Text : "";
         }
 
         private static IEnumerable<bool> IterateUntilFalse(bool condition)
@@ -88,13 +87,13 @@ namespace HtmlScraper
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                 // Perform Excel export
-                using (ExcelPackage excelPackage = new ExcelPackage())
+                using (var excelPackage = new ExcelPackage())
                 {
                     excelPackage.Workbook.Properties.Author = GetVersionString();
                     var worksheet = excelPackage.Workbook.Worksheets.Add("HtmlScraper");
 
                     int excelRowIndex = 1, excelColumnIndex = 1, pageNumber = 0;
-                    HtmlWeb htmlWeb = new HtmlWeb();
+                    var htmlWeb = new HtmlWeb();
 
                     // Write header
                     foreach (var node in nodes)
@@ -102,22 +101,20 @@ namespace HtmlScraper
                         worksheet.Cells[excelRowIndex, excelColumnIndex].Value = node.Name;
                         excelColumnIndex++;
 
-                        if (node.HtmlTag == "a")
-                        {
-                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = node.Name + "Url";
-                            excelColumnIndex++;
-                        }
+                        if (node.HtmlTag != "a") continue;
+                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = node.Name + "Url";
+                        excelColumnIndex++;
                     }
                     excelRowIndex++;
 
-                    bool newItemsFound = true;
+                    var newItemsFound = true;
                     //Parallel.ForEach(IterateUntilFalse(newItemsFound), ignored => { });
                     while (newItemsFound)
                     {
                         pageNumber++;
                         var uriBuilder = new UriBuilder(baseUrl);
                         var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-                        if (paginationGetParam != null && paginationGetParam != "") query[paginationGetParam] = pageNumber.ToString();
+                        if (!string.IsNullOrEmpty(paginationGetParam)) query[paginationGetParam] = pageNumber.ToString();
                         else newItemsFound = false;
                         uriBuilder.Query = query.ToString();
 
@@ -175,7 +172,7 @@ namespace HtmlScraper
                     // Default file name if the user does not type one in or select a file to replace
                     savePicker.SuggestedFileName = "HtmlScraperExport";
 
-                    StorageFile file = await savePicker.PickSaveFileAsync();
+                    var file = await savePicker.PickSaveFileAsync();
                     if (file != null)
                     {
                         // Prevent updates to the remote version of the file until
@@ -184,7 +181,7 @@ namespace HtmlScraper
 
                         // write to file
                         var stream = await file.OpenAsync(FileAccessMode.ReadWrite);
-                        using (Stream s = stream.GetOutputStreamAt(0).AsStreamForWrite())
+                        using (var s = stream.GetOutputStreamAt(0).AsStreamForWrite())
                         {
                             excelPackage.SaveAs(s);
                         }
@@ -211,7 +208,7 @@ namespace HtmlScraper
             }
             catch (Exception ex)
             {
-                await DisplayErrorDialogAsync("Export error", "Error while exporting: " + ex.ToString());
+                await DisplayErrorDialogAsync("Export error", "Error while exporting: " + ex);
             }
         }
     }

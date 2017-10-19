@@ -5,7 +5,7 @@
     xmlns:local="using:HtmlScraper"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:HtmlAgilityPack="using:HtmlAgilityPack"
+    xmlns:htmlAgilityPack="using:HtmlAgilityPack"
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,10,12,12">
@@ -39,11 +39,11 @@
                      NavigationCompleted="WebViewControl_NavigationCompleted" />
             </Grid>
 
-            <ScrollViewer x:Name="logScroller" Grid.Row="2"
+            <ScrollViewer x:Name="LogScroller" Grid.Row="2"
                       BorderBrush="#FF707070" BorderThickness="1"
                       VerticalScrollBarVisibility="Auto" Margin="0,10,0,0"
                       Height="100">
-                <TextBlock x:Name="logResults" TextWrapping="Wrap"/>
+                <TextBlock x:Name="LogResults" TextWrapping="Wrap"/>
             </ScrollViewer>
         </Grid>
         <Grid Grid.Column="1" Margin="0,0,0,0">
@@ -79,16 +79,13 @@
                           ItemClick="ChildrenListViewItem_Click" 
                           ScrollViewer.VerticalScrollMode="Enabled">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="HtmlAgilityPack:HtmlNode">
+                        <DataTemplate x:DataType="htmlAgilityPack:HtmlNode">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
                                 <Button Content="Add" 
                                             Click="ChildrenListViewItem_AddButtonClick" 
                                             Grid.Column="0" 
@@ -117,9 +114,6 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
                                 <Button Content="Remove" 
                                             Click="SelectedNodesListViewItem_RemoveButtonClick" 
                                             Tag="{x:Bind RelativePath}" 

@@ -8,43 +8,40 @@ using Windows.UI.Xaml.Input;
 using HtmlAgilityPack;
 using System.Collections.ObjectModel;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace HtmlScraper
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage
     {
         public MainPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        HtmlWeb htmlWeb = new HtmlWeb();
-        HtmlDocument htmlDoc;
-        ObservableCollection<SelectedNode> selectedNodes = new ObservableCollection<SelectedNode>();
-        HtmlNode parentNode;
-        Uri baseUrl;
-        string basePath = "";
+        private readonly HtmlWeb _htmlWeb = new HtmlWeb();
+        private HtmlDocument _htmlDoc;
+        private readonly ObservableCollection<SelectedNode> _selectedNodes = new ObservableCollection<SelectedNode>();
+        private HtmlNode _parentNode;
+        private Uri _baseUrl;
+        private string _basePath = "";
 
         /// <summary>
         /// This is the click handler for the "Go" button.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void GoButton_Click()
         {
-            if (!pageIsLoading)
+            if (!PageIsLoading)
             {
                 NavigateWebviewAsync(AddressBox.Text);
             }
             else
             {
                 WebViewControl.Stop();
-                pageIsLoading = false;
+                PageIsLoading = false;
             }
         }
 
@@ -52,9 +49,10 @@ namespace HtmlScraper
         /// Property to control the "Go" button text, forward/backward buttons and progress ring.
         /// </summary>
         private bool _pageIsLoading;
-        bool pageIsLoading
+
+        private bool PageIsLoading
         {
-            get { return _pageIsLoading; }
+            get => _pageIsLoading;
             set
             {
                 _pageIsLoading = value;
@@ -68,7 +66,7 @@ namespace HtmlScraper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void Address_KeyUp(object sender, KeyRoutedEventArgs e)
+        private void Address_KeyUp(object sender, KeyRoutedEventArgs e)
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
@@ -84,9 +82,9 @@ namespace HtmlScraper
         {
             try
             {
-                baseUrl = new Uri(url);
-                htmlDoc = htmlWeb.Load(baseUrl);
-                WebViewControl.Navigate(baseUrl);
+                _baseUrl = new Uri(url);
+                _htmlDoc = _htmlWeb.Load(_baseUrl);
+                WebViewControl.Navigate(_baseUrl);
             }
             catch (UriFormatException ex)
             {
@@ -100,12 +98,12 @@ namespace HtmlScraper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void WebViewControl_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        private void WebViewControl_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
         {
-            string url = Helpers.UriToString(args.Uri);
+            var url = Helpers.UriToString(args.Uri);
             AddressBox.Text = url;
             AppendLog($"Starting navigation to: \"{url}\".");
-            pageIsLoading = true;
+            PageIsLoading = true;
         }
 
         /// <summary>
@@ -114,12 +112,12 @@ namespace HtmlScraper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void WebViewControl_UnviewableContentIdentified(WebView sender, WebViewUnviewableContentIdentifiedEventArgs args)
+        private void WebViewControl_UnviewableContentIdentified(WebView sender, WebViewUnviewableContentIdentifiedEventArgs args)
         {
             AppendLog($"Content for \"{Helpers.UriToString(args.Uri)}\" cannot be loaded into webview.");
             // We throw away the request. See the "Unviewable content" scenario for other
             // ways of handling the event.
-            pageIsLoading = false;
+            PageIsLoading = false;
         }
 
         /// <summary>
@@ -127,19 +125,22 @@ namespace HtmlScraper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void WebViewControl_ContentLoading(WebView sender, WebViewContentLoadingEventArgs args)
+        private void WebViewControl_ContentLoading(WebView sender, WebViewContentLoadingEventArgs args)
         {
-            AppendLog($"Loading content for \"{Helpers.UriToString(args.Uri)}\".");
+            var url = Helpers.UriToString(args.Uri);
+            AddressBox.Text = url;
+            _baseUrl = new Uri(url);
+            _htmlDoc = _htmlWeb.Load(_baseUrl);
+            AppendLog($"Loading content for \"{url}\".");
         }
-
-
+        
         /// <summary>
         /// Handle the event that indicates that the WebView content is fully loaded.
         /// If you need to invoke script, it is best to wait for this event.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void WebViewControl_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
+        private void WebViewControl_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             AppendLog($"Content for \"{Helpers.UriToString(args.Uri)}\" has finished loading.");
         }
@@ -149,39 +150,34 @@ namespace HtmlScraper
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void WebViewControl_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+        private void WebViewControl_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
         {
-            pageIsLoading = false;
-            if (args.IsSuccess)
-            {
-                AppendLog($"Navigation to \"{Helpers.UriToString(args.Uri)}\" completed successfully.");
-            }
-            else
-            {
-                AppendLog($"Navigation to: \"{Helpers.UriToString(args.Uri)}\" failed with error {args.WebErrorStatus}.");
-            }
+            PageIsLoading = false;
+            AppendLog(args.IsSuccess
+                ? $"Navigation to \"{Helpers.UriToString(args.Uri)}\" completed successfully."
+                : $"Navigation to: \"{Helpers.UriToString(args.Uri)}\" failed with error {args.WebErrorStatus}.");
         }
 
         /// <summary>
         /// Helper for logging
         /// </summary>
         /// <param name="logEntry"></param>
-        void AppendLog(string logEntry)
+        private void AppendLog(string logEntry)
         {
-            logResults.Inlines.Add(new Run { Text = logEntry + "\n" });
-            logScroller.ChangeView(0, logScroller.ScrollableHeight, null);
+            LogResults.Inlines.Add(new Run { Text = logEntry + "\n" });
+            LogScroller.ChangeView(0, LogScroller.ScrollableHeight, null);
         }
 
         private async void ListItemPathGoButton_Click(object sender, RoutedEventArgs e)
         {
-            if (htmlDoc == null)
+            if (_htmlDoc == null)
             {
                 await Helpers.DisplayErrorDialogAsync("Page not loaded", "Please load the page first by clicking the Go button next to the URL box!");
                 return;
             }
 
-            var nodes = htmlDoc.DocumentNode.SelectNodes(ListItemPathBox.Text);
-            basePath = nodes.First().XPath;
+            var nodes = _htmlDoc.DocumentNode.SelectNodes(ListItemPathBox.Text);
+            _basePath = nodes.First().XPath;
 
             ListItemPathBlock.Text = $"Found {nodes.Count} nodes on this page.";
             ChildrenListView.ItemsSource = nodes.First().ChildNodes.Where(m => m.Name != "#text");
@@ -190,47 +186,39 @@ namespace HtmlScraper
         private void ChildrenListViewItem_Click(object sender, ItemClickEventArgs e)
         {
             var clickedNode = (HtmlNode)e.ClickedItem;
-            parentNode = clickedNode;
+            _parentNode = clickedNode;
 
-            ChildrenListView.ItemsSource = (clickedNode).ChildNodes.Where(m => m.Name != "#text");
+            ChildrenListView.ItemsSource = clickedNode.ChildNodes.Where(m => m.Name != "#text");
         }
 
         private async void ChildrenListViewItem_AddButtonClick(object sender, RoutedEventArgs e)
         {
             ListItemPathBox.IsEnabled = false;
 
-            var path = (String)((Button)sender).Tag;
-            var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
-            var name = await Helpers.InputTextDialogAsync("Give a name for this element!", (clickedNode.Attributes["class"]?.Value ?? ""));
+            var path = (string)((Button)sender).Tag;
+            var clickedNode = _htmlDoc.DocumentNode.SelectSingleNode(path);
+            var name = await Helpers.InputTextDialogAsync("Give a name for this element!", clickedNode.Attributes["class"]?.Value ?? "");
             var newSelectedNode = new SelectedNode
             {
                 Name = name,
                 HtmlTag = clickedNode.Name,
-                RelativePath = Helpers.TrimStart(clickedNode.XPath, basePath)
+                RelativePath = Helpers.TrimStart(clickedNode.XPath, _basePath)
             };
 
-            if (!selectedNodes.Any(m => m.RelativePath == newSelectedNode.RelativePath)) selectedNodes.Add(newSelectedNode);
+            if (_selectedNodes.All(m => m.RelativePath != newSelectedNode.RelativePath)) _selectedNodes.Add(newSelectedNode);
             else await Helpers.DisplayErrorDialogAsync("Item already selected", "You have already selected this item.");
 
-            SelectedNodesListView.ItemsSource = selectedNodes;
+            SelectedNodesListView.ItemsSource = _selectedNodes;
         }
 
         private void SelectedNodesListViewItem_RemoveButtonClick(object sender, RoutedEventArgs e)
         {
-            var path = Helpers.TrimStart((String)((Button)sender).Tag, basePath);
-            selectedNodes.Remove(selectedNodes.SingleOrDefault(m => m.RelativePath == path));
+            var path = Helpers.TrimStart((string)((Button)sender).Tag, _basePath);
+            _selectedNodes.Remove(_selectedNodes.SingleOrDefault(m => m.RelativePath == path));
 
-            SelectedNodesListView.ItemsSource = selectedNodes;
+            SelectedNodesListView.ItemsSource = _selectedNodes;
 
-            if (selectedNodes.Count == 0) ListItemPathBox.IsEnabled = true;
-        }
-
-        private void ChildrenListViewItem_UpButtonClick(object sender, RoutedEventArgs e)
-        {
-            var path = (String)((Button)sender).Tag;
-            var clickedNode = htmlDoc.DocumentNode.SelectSingleNode(path);
-
-            ChildrenListView.ItemsSource = clickedNode.ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+            if (_selectedNodes.Count == 0) ListItemPathBox.IsEnabled = true;
         }
 
         private void UpButton_Click(object sender, RoutedEventArgs e)
@@ -238,10 +226,15 @@ namespace HtmlScraper
             try
             {
                 var childrenList = (IEnumerable<HtmlNode>)ChildrenListView.ItemsSource;
-                if (childrenList != null) if (childrenList.Count() != 0) ChildrenListView.ItemsSource = childrenList.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
-                    else if (parentNode != null) if (parentNode.ParentNode != null) ChildrenListView.ItemsSource = parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+                if (childrenList == null) return;
+                var htmlNodes = childrenList as IList<HtmlNode> ?? childrenList.ToList();
+                if (htmlNodes.Count() != 0) ChildrenListView.ItemsSource = htmlNodes.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+                else if (_parentNode?.ParentNode != null) ChildrenListView.ItemsSource = _parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
             }
-            catch (Exception) { }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
         private async void ExcelExportButton_Click(object sender, RoutedEventArgs e)
@@ -262,8 +255,8 @@ namespace HtmlScraper
             ExportProgressRing.Visibility = Visibility.Visible;
 
             await Helpers.ExcelExportAsync(
-                selectedNodes.ToList(),
-                baseUrl,
+                _selectedNodes.ToList(),
+                _baseUrl,
                 PaginationBox.Text,
                 ListItemPathBox.Text,
                 ExportCallback);
