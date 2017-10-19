@@ -10,8 +10,8 @@
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,10,12,12">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Margin="0,0,10,0">
             <Grid.RowDefinitions>
@@ -23,27 +23,31 @@
                 <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">1. Navigate to the URL</TextBlock>
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="AddressBox" Text="https://azuremarketplace.microsoft.com/en-us/marketplace/apps?filters=microsoft%3Bpartners&amp;page=1" Margin="0,0,10,0" Grid.Column="0" KeyUp="Address_KeyUp"/>
-                    <Button x:Name="GoButton" Content="Go" Grid.Column="1" Click="{x:Bind GoButton_Click}"/>
+                    <TextBox x:Name="AddressBox"
+                             Text="https://azuremarketplace.microsoft.com/en-us/marketplace/apps?filters=microsoft%3Bpartners&amp;page=1"
+                             Margin="0,0,10,0" Grid.Column="0" KeyUp="Address_KeyUp" />
+                    <Button x:Name="GoButton" Content="Go" Grid.Column="1" Click="{x:Bind GoButton_Click}" />
                 </Grid>
                 <ProgressBar x:Name="ProgressControl" IsIndeterminate="True" Opacity="0" />
             </StackPanel>
 
             <Grid Grid.Row="1" BorderBrush="#FF707070" BorderThickness="1" Margin="0,10,0,0">
                 <WebView x:Name="WebViewControl"
-                     NavigationStarting="WebViewControl_NavigationStarting" ContentLoading="WebViewControl_ContentLoading"
-                     DOMContentLoaded="WebViewControl_DOMContentLoaded" UnviewableContentIdentified="WebViewControl_UnviewableContentIdentified"
-                     NavigationCompleted="WebViewControl_NavigationCompleted" />
+                         NavigationStarting="WebViewControl_NavigationStarting"
+                         ContentLoading="WebViewControl_ContentLoading"
+                         DOMContentLoaded="WebViewControl_DOMContentLoaded"
+                         UnviewableContentIdentified="WebViewControl_UnviewableContentIdentified"
+                         NavigationCompleted="WebViewControl_NavigationCompleted" />
             </Grid>
 
             <ScrollViewer x:Name="LogScroller" Grid.Row="2"
-                      BorderBrush="#FF707070" BorderThickness="1"
-                      VerticalScrollBarVisibility="Auto" Margin="0,10,0,0"
-                      Height="100">
-                <TextBlock x:Name="LogResults" TextWrapping="Wrap"/>
+                          BorderBrush="#FF707070" BorderThickness="1"
+                          VerticalScrollBarVisibility="Auto" Margin="0,10,0,0"
+                          Height="100">
+                <TextBlock x:Name="LogResults" TextWrapping="Wrap" />
             </ScrollViewer>
         </Grid>
         <Grid Grid.Column="1" Margin="0,0,0,0">
@@ -54,81 +58,92 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
-                <TextBox x:Name="PaginationBox" Text="page" Header="2. Put here the pagination GET param name (if you'd like to fetch multiple pages)" Margin="0,0,0,10"/>
+                <TextBox x:Name="PaginationBox" Text="page"
+                         Header="2. Put here the pagination GET param name (if you'd like to fetch multiple pages)"
+                         Margin="0,0,0,10" />
                 <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">3. List item path</TextBlock>
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="ListItemPathBox" Text="//div[@class='spza_tileWrapper']" LostFocus="ListItemPathGoButton_Click" Grid.Column="0"/>
-                    <Button x:Name="ListItemPathGoButton" Content="Go" Grid.Column="1" Margin="10,0,0,0" Click="ListItemPathGoButton_Click"/>
-                    <Button x:Name="UpButton" Content="Up" Grid.Column="2" Margin="10,0,0,0" Click="UpButton_Click"/>
+                    <TextBox x:Name="ListItemPathBox" Text="//div[@class='spza_tileWrapper']"
+                             LostFocus="ListItemPathGoButton_Click" Grid.Column="0" />
+                    <Button x:Name="ListItemPathGoButton" Content="Go" Grid.Column="1" Margin="10,0,0,0"
+                            Click="ListItemPathGoButton_Click" />
+                    <Button x:Name="UpButton" Content="Up" Grid.Column="2" Margin="10,0,0,0" Click="UpButton_Click" />
                 </Grid>
-                <TextBlock x:Name="ListItemPathBlock" Margin="0,0,0,20"/>
+                <TextBlock x:Name="ListItemPathBlock" Margin="0,0,0,20" />
             </StackPanel>
             <ScrollViewer x:Name="ChildrenScroller"
                           BorderBrush="#FF707070" BorderThickness="1"
-                          VerticalScrollBarVisibility="Auto" 
-                          Margin="0,0,0,10" 
+                          VerticalScrollBarVisibility="Auto"
+                          Margin="0,0,0,10"
                           MinHeight="200"
                           Grid.Row="1">
                 <ListView x:Name="ChildrenListView"
                           IsItemClickEnabled="True"
-                          ItemClick="ChildrenListViewItem_Click" 
+                          ItemClick="ChildrenListViewItem_Click"
                           ScrollViewer.VerticalScrollMode="Enabled">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="htmlAgilityPack:HtmlNode">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Button Content="Add" 
-                                            Click="ChildrenListViewItem_AddButtonClick" 
-                                            Grid.Column="0" 
-                                            Tag="{x:Bind XPath}" Margin="0,10"/>
+                                <Button Content="Add"
+                                        Click="ChildrenListViewItem_AddButtonClick"
+                                        Grid.Column="0"
+                                        Tag="{x:Bind XPath}" Margin="0,10" />
 
-                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
-                                <TextBlock Text="{x:Bind InnerText}" TextTrimming="WordEllipsis" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2"/>
+                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Grid.Column="1" />
+                                <TextBlock Text="{x:Bind InnerText}" TextTrimming="WordEllipsis"
+                                           VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
             </ScrollViewer>
             <ScrollViewer x:Name="SelectedNodesScroller"
-                      BorderBrush="#FF707070" BorderThickness="1"
-                      VerticalScrollBarVisibility="Auto" Margin="0,0,0,0"
-                      MinHeight="100"
-                              Grid.Row="2">
+                          BorderBrush="#FF707070" BorderThickness="1"
+                          VerticalScrollBarVisibility="Auto" Margin="0,0,0,0"
+                          MinHeight="100"
+                          Grid.Row="2">
                 <ListView x:Name="SelectedNodesListView"
-                              IsItemClickEnabled="False">
+                          IsItemClickEnabled="False">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:SelectedNode">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Button Content="Remove" 
-                                            Click="SelectedNodesListViewItem_RemoveButtonClick" 
-                                            Tag="{x:Bind RelativePath}" 
-                                            Grid.Column="0"/>
-                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="1"/>
-                                <TextBlock Text="{x:Bind HtmlTag}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="2"/>
-                                <TextBlock Text="{x:Bind RelativePath}" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="3"/>
+                                <Button Content="Remove"
+                                        Click="SelectedNodesListViewItem_RemoveButtonClick"
+                                        Tag="{x:Bind RelativePath}"
+                                        Grid.Column="0" />
+                                <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Grid.Column="1" />
+                                <TextBlock Text="{x:Bind HtmlTag}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Grid.Column="2" />
+                                <TextBlock Text="{x:Bind RelativePath}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Grid.Column="3" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
             </ScrollViewer>
             <StackPanel Orientation="Horizontal" Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Right">
-                <ProgressRing x:Name="ExportProgressRing" Visibility="Collapsed" IsActive="False" HorizontalAlignment="Center" Margin="0,10,10,0" />  
-                <Button x:Name="ExcelExportButton" Content="4. Export to Excel" Margin="0,10,0,0" Click="ExcelExportButton_Click"/>              
+                <ProgressRing x:Name="ExportProgressRing" Visibility="Collapsed" IsActive="False"
+                              HorizontalAlignment="Center" Margin="0,10,10,0" />
+                <Button x:Name="ExcelExportButton" Content="4. Export to Excel" Margin="0,10,0,0"
+                        Click="ExcelExportButton_Click" />
             </StackPanel>
         </Grid>
     </Grid>

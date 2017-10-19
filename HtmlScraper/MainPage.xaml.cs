@@ -1,43 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
+using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
 using HtmlAgilityPack;
-using System.Collections.ObjectModel;
-using System.Text;
 
 namespace HtmlScraper
 {
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
+    ///     An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
     public sealed partial class MainPage
     {
+        private readonly HtmlWeb _htmlWeb = new HtmlWeb();
+        private readonly ObservableCollection<SelectedNode> _selectedNodes = new ObservableCollection<SelectedNode>();
+        private string _basePath = "";
+        private Uri _baseUrl;
+        private HtmlDocument _htmlDoc;
+
+        /// <summary>
+        ///     Property to control the "Go" button text, forward/backward buttons and progress ring.
+        /// </summary>
+        private bool _pageIsLoading;
+
+        private HtmlNode _parentNode;
+
         public MainPage()
         {
             InitializeComponent();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        private readonly HtmlWeb _htmlWeb = new HtmlWeb();
-        private HtmlDocument _htmlDoc;
-        private readonly ObservableCollection<SelectedNode> _selectedNodes = new ObservableCollection<SelectedNode>();
-        private HtmlNode _parentNode;
-        private Uri _baseUrl;
-        private string _basePath = "";
+        private bool PageIsLoading
+        {
+            get => _pageIsLoading;
+            set
+            {
+                _pageIsLoading = value;
+                GoButton.Content = value ? "Stop" : "Go";
+                ProgressControl.Opacity = value ? 1 : 0;
+            }
+        }
 
         /// <summary>
-        /// This is the click handler for the "Go" button.
+        ///     This is the click handler for the "Go" button.
         /// </summary>
         private void GoButton_Click()
         {
-            if (!PageIsLoading)
-            {
-                NavigateWebviewAsync(AddressBox.Text);
-            }
+            if (!PageIsLoading) { NavigateWebviewAsync(AddressBox.Text); }
             else
             {
                 WebViewControl.Stop();
@@ -46,36 +61,17 @@ namespace HtmlScraper
         }
 
         /// <summary>
-        /// Property to control the "Go" button text, forward/backward buttons and progress ring.
-        /// </summary>
-        private bool _pageIsLoading;
-
-        private bool PageIsLoading
-        {
-            get => _pageIsLoading;
-            set
-            {
-                _pageIsLoading = value;
-                GoButton.Content = (value ? "Stop" : "Go");
-                ProgressControl.Opacity = (value ? 1 : 0);
-            }
-        }
-
-        /// <summary>
-        /// This handles the enter key in the url address box
+        ///     This handles the enter key in the url address box
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void Address_KeyUp(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
-            {
-                NavigateWebviewAsync(AddressBox.Text);
-            }
+            if (e.Key == VirtualKey.Enter) NavigateWebviewAsync(AddressBox.Text);
         }
 
         /// <summary>
-        /// Helper to perform the navigation in webview
+        ///     Helper to perform the navigation in webview
         /// </summary>
         /// <param name="url"></param>
         private void NavigateWebviewAsync(string url)
@@ -94,7 +90,7 @@ namespace HtmlScraper
         }
 
         /// <summary>
-        /// Handle the event that indicates that WebView is starting a navigation.
+        ///     Handle the event that indicates that WebView is starting a navigation.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -107,8 +103,8 @@ namespace HtmlScraper
         }
 
         /// <summary>
-        /// Handle the event that indicates that the WebView content is not a web page.
-        /// For example, it may be a file download.
+        ///     Handle the event that indicates that the WebView content is not a web page.
+        ///     For example, it may be a file download.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -121,7 +117,7 @@ namespace HtmlScraper
         }
 
         /// <summary>
-        /// Handle the event that indicates that WebView has resolved the URI, and that it is loading HTML content.
+        ///     Handle the event that indicates that WebView has resolved the URI, and that it is loading HTML content.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -133,10 +129,10 @@ namespace HtmlScraper
             _htmlDoc = _htmlWeb.Load(_baseUrl);
             AppendLog($"Loading content for \"{url}\".");
         }
-        
+
         /// <summary>
-        /// Handle the event that indicates that the WebView content is fully loaded.
-        /// If you need to invoke script, it is best to wait for this event.
+        ///     Handle the event that indicates that the WebView content is fully loaded.
+        ///     If you need to invoke script, it is best to wait for this event.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -146,25 +142,25 @@ namespace HtmlScraper
         }
 
         /// <summary>
-        /// Event to indicate webview has completed the navigation, either with success or failure.
+        ///     Event to indicate webview has completed the navigation, either with success or failure.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
         private void WebViewControl_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
         {
             PageIsLoading = false;
-            AppendLog(args.IsSuccess
-                ? $"Navigation to \"{Helpers.UriToString(args.Uri)}\" completed successfully."
-                : $"Navigation to: \"{Helpers.UriToString(args.Uri)}\" failed with error {args.WebErrorStatus}.");
+            AppendLog(args.IsSuccess ? 
+                $"Navigation to \"{Helpers.UriToString(args.Uri)}\" completed successfully." : 
+                $"Navigation to: \"{Helpers.UriToString(args.Uri)}\" failed with error {args.WebErrorStatus}.");
         }
 
         /// <summary>
-        /// Helper for logging
+        ///     Helper for logging
         /// </summary>
         /// <param name="logEntry"></param>
         private void AppendLog(string logEntry)
         {
-            LogResults.Inlines.Add(new Run { Text = logEntry + "\n" });
+            LogResults.Inlines.Add(new Run {Text = logEntry + "\n"});
             LogScroller.ChangeView(0, LogScroller.ScrollableHeight, null);
         }
 
@@ -185,7 +181,7 @@ namespace HtmlScraper
 
         private void ChildrenListViewItem_Click(object sender, ItemClickEventArgs e)
         {
-            var clickedNode = (HtmlNode)e.ClickedItem;
+            var clickedNode = (HtmlNode) e.ClickedItem;
             _parentNode = clickedNode;
 
             ChildrenListView.ItemsSource = clickedNode.ChildNodes.Where(m => m.Name != "#text");
@@ -195,15 +191,10 @@ namespace HtmlScraper
         {
             ListItemPathBox.IsEnabled = false;
 
-            var path = (string)((Button)sender).Tag;
+            var path = (string) ((Button) sender).Tag;
             var clickedNode = _htmlDoc.DocumentNode.SelectSingleNode(path);
             var name = await Helpers.InputTextDialogAsync("Give a name for this element!", clickedNode.Attributes["class"]?.Value ?? "");
-            var newSelectedNode = new SelectedNode
-            {
-                Name = name,
-                HtmlTag = clickedNode.Name,
-                RelativePath = Helpers.TrimStart(clickedNode.XPath, _basePath)
-            };
+            var newSelectedNode = new SelectedNode {Name = name, HtmlTag = clickedNode.Name, RelativePath = Helpers.TrimStart(clickedNode.XPath, _basePath)};
 
             if (_selectedNodes.All(m => m.RelativePath != newSelectedNode.RelativePath)) _selectedNodes.Add(newSelectedNode);
             else await Helpers.DisplayErrorDialogAsync("Item already selected", "You have already selected this item.");
@@ -213,7 +204,7 @@ namespace HtmlScraper
 
         private void SelectedNodesListViewItem_RemoveButtonClick(object sender, RoutedEventArgs e)
         {
-            var path = Helpers.TrimStart((string)((Button)sender).Tag, _basePath);
+            var path = Helpers.TrimStart((string) ((Button) sender).Tag, _basePath);
             _selectedNodes.Remove(_selectedNodes.SingleOrDefault(m => m.RelativePath == path));
 
             SelectedNodesListView.ItemsSource = _selectedNodes;
@@ -225,10 +216,10 @@ namespace HtmlScraper
         {
             try
             {
-                var childrenList = (IEnumerable<HtmlNode>)ChildrenListView.ItemsSource;
+                var childrenList = (IEnumerable<HtmlNode>) ChildrenListView.ItemsSource;
                 if (childrenList == null) return;
                 var htmlNodes = childrenList as IList<HtmlNode> ?? childrenList.ToList();
-                if (htmlNodes.Count() != 0) ChildrenListView.ItemsSource = htmlNodes.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
+                if (htmlNodes.Count != 0) ChildrenListView.ItemsSource = htmlNodes.First().ParentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
                 else if (_parentNode?.ParentNode != null) ChildrenListView.ItemsSource = _parentNode.ParentNode.ChildNodes.Where(m => m.Name != "#text");
             }
             catch (Exception)
@@ -254,12 +245,7 @@ namespace HtmlScraper
             ExportProgressRing.IsActive = true;
             ExportProgressRing.Visibility = Visibility.Visible;
 
-            await Helpers.ExcelExportAsync(
-                _selectedNodes.ToList(),
-                _baseUrl,
-                PaginationBox.Text,
-                ListItemPathBox.Text,
-                ExportCallback);
+            await Helpers.ExcelExportAsync(_selectedNodes.ToList(), _baseUrl, PaginationBox.Text, ListItemPathBox.Text, ExportCallback);
 
             // Hide ProgressRing
             ExportProgressRing.IsActive = false;
@@ -276,9 +262,6 @@ namespace HtmlScraper
             SelectedNodesScroller.IsEnabled = true;
         }
 
-        private void ExportCallback(int pageNumber)
-        {
-            AppendLog($"Loaded items from page {pageNumber}.");
-        }
+        private void ExportCallback(int pageNumber) { AppendLog($"Loaded items from page {pageNumber}."); }
     }
 }

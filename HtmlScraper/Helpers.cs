@@ -1,75 +1,56 @@
-﻿using HtmlAgilityPack;
-using OfficeOpenXml;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Windows.ApplicationModel.Core;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Provider;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
+using HtmlAgilityPack;
+using OfficeOpenXml;
 
 namespace HtmlScraper
 {
-    class Helpers
+    internal static class Helpers
     {
-        public static string UriToString(Uri uri)
-        {
-            return uri != null ? uri.ToString() : "";
-        }
+        public static string UriToString(Uri uri) { return uri != null ? uri.ToString() : ""; }
 
         public static string TrimStart(string target, string trimString)
         {
             var result = target;
-            while (result.StartsWith(trimString))
-            {
-                result = result.Substring(trimString.Length);
-            }
+            while (result.StartsWith(trimString)) result = result.Substring(trimString.Length);
 
             return result;
         }
 
         /// <summary>
-        /// Returns app version in "HtmlScraper 2.0.3" format.
+        ///     Returns app version in "HtmlScraper 2.0.3" format.
         /// </summary>
         /// <returns></returns>
         public static string GetVersionString()
         {
-            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
             return string.Format("HtmlScraper {0}.{1}.{2}", version.Major, version.Minor, version.Build);
         }
 
         public static async Task<ContentDialogResult> DisplayErrorDialogAsync(string title, string content)
         {
-            var dialog = new ContentDialog
-            {
-                Title = title,
-                Content = content,
-                CloseButtonText = "OK"
-            };
+            var dialog = new ContentDialog {Title = title, Content = content, CloseButtonText = "OK"};
 
             return await dialog.ShowAsync();
         }
 
-        public static async Task<string> InputTextDialogAsync(string title) => await InputTextDialogAsync(title, "");
+        public static async Task<string> InputTextDialogAsync(string title) { return await InputTextDialogAsync(title, ""); }
+
         public static async Task<string> InputTextDialogAsync(string title, string defaultText)
         {
-            var inputTextBox = new TextBox
-            {
-                Text = defaultText,
-                AcceptsReturn = false,
-                Height = 32
-            };
-            var dialog = new ContentDialog
-            {
-                Content = inputTextBox,
-                Title = title,
-                IsSecondaryButtonEnabled = false,
-                PrimaryButtonText = "Ok"
-            };
+            var inputTextBox = new TextBox {Text = defaultText, AcceptsReturn = false, Height = 32};
+            var dialog = new ContentDialog {Content = inputTextBox, Title = title, IsSecondaryButtonEnabled = false, PrimaryButtonText = "Ok"};
 
             return await dialog.ShowAsync() == ContentDialogResult.Primary ? inputTextBox.Text : "";
         }
@@ -123,7 +104,6 @@ namespace HtmlScraper
 
                         if (newItems == null) newItemsFound = false;
                         else
-                        {
                             foreach (var item in newItems)
                             {
                                 excelColumnIndex = 1;
@@ -136,10 +116,7 @@ namespace HtmlScraper
                                             if (node.Name == "Rating") worksheet.Cells[excelRowIndex, excelColumnIndex].Value = Convert.ToDouble(TrimStart(nodeElement?.Attributes["class"]?.Value, "rating-")) / 10;
                                             else worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
                                             excelColumnIndex++;
-                                            var hrefUriBuilder = new UriBuilder(baseUrl)
-                                            {
-                                                Path = nodeElement?.Attributes["href"]?.Value
-                                            };
+                                            var hrefUriBuilder = new UriBuilder(baseUrl) {Path = nodeElement?.Attributes["href"]?.Value};
                                             worksheet.Cells[excelRowIndex, excelColumnIndex].Value = HttpUtility.UrlDecode(hrefUriBuilder.Uri.AbsoluteUri);
                                             break;
                                         case "img":
@@ -153,9 +130,8 @@ namespace HtmlScraper
                                 }
                                 excelRowIndex++;
                             }
-                        }
 
-                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { callback(pageNumber); });
+                        await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { callback(pageNumber); });
 
                         //System.Windows.Threading.Dispatcher.Invoke(() =>
                         //{
@@ -163,12 +139,9 @@ namespace HtmlScraper
                         //});
                     }
 
-                    var savePicker = new FileSavePicker
-                    {
-                        SuggestedStartLocation = PickerLocationId.DocumentsLibrary
-                    };
+                    var savePicker = new FileSavePicker {SuggestedStartLocation = PickerLocationId.DocumentsLibrary};
                     // Dropdown of file types the user can save the file as
-                    savePicker.FileTypeChoices.Add("Excel (.xlsx)", new List<string>() { ".xlsx" });
+                    savePicker.FileTypeChoices.Add("Excel (.xlsx)", new List<string> {".xlsx"});
                     // Default file name if the user does not type one in or select a file to replace
                     savePicker.SuggestedFileName = "HtmlScraperExport";
 
@@ -181,35 +154,20 @@ namespace HtmlScraper
 
                         // write to file
                         var stream = await file.OpenAsync(FileAccessMode.ReadWrite);
-                        using (var s = stream.GetOutputStreamAt(0).AsStreamForWrite())
-                        {
-                            excelPackage.SaveAs(s);
-                        }
+                        using (var s = stream.GetOutputStreamAt(0).AsStreamForWrite()) { excelPackage.SaveAs(s); }
                         stream.Dispose();
 
                         // Let Windows know that we're finished changing the file so
                         // the other app can update the remote version of the file.
                         // Completing updates may require Windows to ask for user input.
-                        FileUpdateStatus status = await CachedFileManager.CompleteUpdatesAsync(file);
-                        if (status == FileUpdateStatus.Complete)
-                        {
-                            await DisplayErrorDialogAsync("Export successful", "Successfully exported into the Excel file: " + file.Name);
-                        }
-                        else
-                        {
-                            await DisplayErrorDialogAsync("Export error", "File " + file.Name + " couldn't be saved.");
-                        }
+                        var status = await CachedFileManager.CompleteUpdatesAsync(file);
+                        if (status == FileUpdateStatus.Complete) await DisplayErrorDialogAsync("Export successful", "Successfully exported into the Excel file: " + file.Name);
+                        else await DisplayErrorDialogAsync("Export error", "File " + file.Name + " couldn't be saved.");
                     }
-                    else
-                    {
-                        await DisplayErrorDialogAsync("Export error", "Operation cancelled.");
-                    }
+                    else { await DisplayErrorDialogAsync("Export error", "Operation cancelled."); }
                 }
             }
-            catch (Exception ex)
-            {
-                await DisplayErrorDialogAsync("Export error", "Error while exporting: " + ex);
-            }
+            catch (Exception ex) { await DisplayErrorDialogAsync("Export error", "Error while exporting: " + ex); }
         }
     }
 
@@ -220,4 +178,3 @@ namespace HtmlScraper
         public string RelativePath { get; set; }
     }
 }
-
