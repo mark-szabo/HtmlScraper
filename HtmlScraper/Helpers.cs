@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Windows.ApplicationModel.Core;
@@ -18,6 +20,7 @@ namespace HtmlScraper
 {
     internal static class Helpers
     {
+        private static object _incrementLock = new object();
         public static string UriToString(Uri uri) { return uri != null ? uri.ToString() : ""; }
 
         public static string TrimStart(string target, string trimString)
@@ -40,7 +43,7 @@ namespace HtmlScraper
 
         public static async Task<ContentDialogResult> DisplayErrorDialogAsync(string title, string content)
         {
-            var dialog = new ContentDialog {Title = title, Content = content, CloseButtonText = "OK"};
+            var dialog = new ContentDialog { Title = title, Content = content, CloseButtonText = "OK" };
 
             return await dialog.ShowAsync();
         }
@@ -49,15 +52,18 @@ namespace HtmlScraper
 
         public static async Task<string> InputTextDialogAsync(string title, string defaultText)
         {
-            var inputTextBox = new TextBox {Text = defaultText, AcceptsReturn = false, Height = 32};
-            var dialog = new ContentDialog {Content = inputTextBox, Title = title, IsSecondaryButtonEnabled = false, PrimaryButtonText = "Ok"};
+            var inputTextBox = new TextBox { Text = defaultText, AcceptsReturn = false, Height = 32 };
+            var dialog = new ContentDialog { Content = inputTextBox, Title = title, IsSecondaryButtonEnabled = false, PrimaryButtonText = "Ok" };
 
             return await dialog.ShowAsync() == ContentDialogResult.Primary ? inputTextBox.Text : "";
         }
 
-        private static IEnumerable<bool> IterateUntilFalse(bool condition)
+        private static IEnumerable<bool> IterateUntilTrue(bool condition)
         {
-            while (condition) yield return true;
+            while (!condition)
+            {
+                yield return true;
+            }
         }
 
         public static async Task ExcelExportAsync(List<SelectedNode> nodes, Uri baseUrl, string paginationGetParam, string basePath, Action<int> callback)
@@ -88,60 +94,67 @@ namespace HtmlScraper
                     }
                     excelRowIndex++;
 
-                    var newItemsFound = true;
-                    //Parallel.ForEach(IterateUntilFalse(newItemsFound), ignored => { });
-                    while (newItemsFound)
-                    {
-                        pageNumber++;
-                        var uriBuilder = new UriBuilder(baseUrl);
-                        var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-                        if (!string.IsNullOrEmpty(paginationGetParam)) query[paginationGetParam] = pageNumber.ToString();
-                        else newItemsFound = false;
-                        uriBuilder.Query = query.ToString();
-
-                        var htmlDoc = htmlWeb.Load(uriBuilder.Uri);
-                        var newItems = htmlDoc.DocumentNode.SelectNodes(basePath);
-
-                        if (newItems == null) newItemsFound = false;
-                        else
-                            foreach (var item in newItems)
-                            {
-                                excelColumnIndex = 1;
-                                foreach (var node in nodes)
+                    await Task.Factory.StartNew(
+                        () =>
+                        {
+                            var noNewItemFoundCancellationTokenSource = new CancellationTokenSource();
+                            Parallel.ForEach(
+                                IterateUntilTrue(noNewItemFoundCancellationTokenSource.IsCancellationRequested),
+                                async ignored =>
                                 {
-                                    var nodeElement = htmlDoc.DocumentNode.SelectSingleNode(item.XPath + node.RelativePath);
-                                    switch (node.HtmlTag)
+                                    int currentPageNumber;
+                                    lock (_incrementLock)
                                     {
-                                        case "a":
-                                            if (node.Name == "Rating") worksheet.Cells[excelRowIndex, excelColumnIndex].Value = Convert.ToDouble(TrimStart(nodeElement?.Attributes["class"]?.Value, "rating-")) / 10;
-                                            else worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
-                                            excelColumnIndex++;
-                                            var hrefUriBuilder = new UriBuilder(baseUrl) {Path = nodeElement?.Attributes["href"]?.Value};
-                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = HttpUtility.UrlDecode(hrefUriBuilder.Uri.AbsoluteUri);
-                                            break;
-                                        case "img":
-                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.Attributes["src"]?.Value;
-                                            break;
-                                        default:
-                                            worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
-                                            break;
+                                        pageNumber++;
+                                        currentPageNumber = pageNumber;
                                     }
-                                    excelColumnIndex++;
-                                }
-                                excelRowIndex++;
-                            }
+                                    var uriBuilder = new UriBuilder(baseUrl);
+                                    var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                                    if (!string.IsNullOrEmpty(paginationGetParam)) query[paginationGetParam] = currentPageNumber.ToString();
+                                    else noNewItemFoundCancellationTokenSource.Cancel();
+                                    uriBuilder.Query = query.ToString();
 
-                        await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { callback(pageNumber); });
+                                    var htmlDoc = htmlWeb.Load(uriBuilder.Uri);
+                                    var newItems = htmlDoc.DocumentNode.SelectNodes(basePath);
 
-                        //System.Windows.Threading.Dispatcher.Invoke(() =>
-                        //{
-                        //    callback(pageNumber);
-                        //});
-                    }
+                                    if (newItems == null) noNewItemFoundCancellationTokenSource.Cancel();
+                                    else
+                                        foreach (var item in newItems)
+                                        {
+                                            excelColumnIndex = 1;
+                                            foreach (var node in nodes)
+                                            {
+                                                var nodeElement = htmlDoc.DocumentNode.SelectSingleNode(item.XPath + node.RelativePath);
+                                                switch (node.HtmlTag)
+                                                {
+                                                    case "a":
+                                                        if (node.Name == "Rating") worksheet.Cells[excelRowIndex, excelColumnIndex].Value = Convert.ToDouble(TrimStart(nodeElement?.Attributes["class"]?.Value, "rating-")) / 10;
+                                                        else worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
+                                                        excelColumnIndex++;
+                                                        var hrefUriBuilder = new UriBuilder(baseUrl) {Path = nodeElement?.Attributes["href"]?.Value};
+                                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = HttpUtility.UrlDecode(hrefUriBuilder.Uri.AbsoluteUri);
+                                                        break;
+                                                    case "img":
+                                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.Attributes["src"]?.Value;
+                                                        break;
+                                                    default:
+                                                        worksheet.Cells[excelRowIndex, excelColumnIndex].Value = nodeElement?.InnerText;
+                                                        break;
+                                                }
+                                                excelColumnIndex++;
+                                            }
+                                            excelRowIndex++;
+                                        }
 
-                    var savePicker = new FileSavePicker {SuggestedStartLocation = PickerLocationId.DocumentsLibrary};
+                                    Debug.WriteLine($"Now on page {currentPageNumber}");
+                                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () => { callback(currentPageNumber); });
+
+                                });
+                        });
+
+                    var savePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
                     // Dropdown of file types the user can save the file as
-                    savePicker.FileTypeChoices.Add("Excel (.xlsx)", new List<string> {".xlsx"});
+                    savePicker.FileTypeChoices.Add("Excel (.xlsx)", new List<string> { ".xlsx" });
                     // Default file name if the user does not type one in or select a file to replace
                     savePicker.SuggestedFileName = "HtmlScraperExport";
 
